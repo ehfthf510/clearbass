@@ -169,8 +169,7 @@ function applyDSP(snap){
   set(shelf.frequency,m.shF); set(shelf.gain,x*m.shG/10);
   set(punch.frequency,m.pF); set(punch.Q,m.pQ); set(punch.gain,x>0?x/10*m.pG:0);
   set(limiter.threshold,m.thr); set(limiter.ratio,m.ratio); set(limiter.attack,m.att); set(limiter.release,m.rel);
-  set(lmk.gain,Math.pow(10,m.thr*(1-1/m.ratio)*.6/20));
-  const eqMax=Math.max(0,...eqR.map(r=>+r.value)), compDb=-m.comp*Math.max(x,0)-eqMax*.5;
+  const compDb=-m.comp*Math.max(x,0);
   set(master.gain,$("#vol").value/100*Math.pow(10,compDb/20),.02);
   set(norm.gain,Math.pow(10,(on?normDb:0)/20),.05);
 }
@@ -184,7 +183,7 @@ async function analyze(tr){
     let sum=0,n=0,pk=0;
     for(let c=0;c<ab.numberOfChannels;c++){const d=ab.getChannelData(c);for(let i=0;i<d.length;i++){const v=d[i],a=v<0?-v:v;sum+=v*v;if(a>pk)pk=a}n+=d.length}
     const rmsDb=20*Math.log10(Math.sqrt(sum/n)||1e-6), pkDb=20*Math.log10(pk||1e-6);
-    tr.gain=Math.max(Math.min(-14-rmsDb,-pkDb-3,12),-18);
+    tr.gain=Math.max(Math.min(-14-rmsDb,-pkDb-.5,12),-18);
   }catch(e){tr.gain=0}
   return tr.gain;
 }
