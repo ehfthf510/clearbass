@@ -131,13 +131,15 @@ const PRESETS=[
  ["Acoustic / Cafe",2,[1,3,2,1,0]]];
 
 let tracks=[],cur=-1,shuffle=false,repeat=false,normDb=0,mode=0,url=null,token=0;
-let ctx,src,norm,lp,hp,shelf,punch,limiter,eq=[],master;
+const RAW=location.hash==="#raw"; // 진단용: 주소 뒤에 #raw 를 붙이면 오디오 처리 없이 원본 재생
+let ctx,src,norm,lp,hp,shelf,punch,limiter,lmk,safe,eq=[],master;
 
 /* audio → norm → ┬ LP×2(150Hz,24dB/oct) → shelf → punch → limiter ┐
                   └ HP×2(150Hz,24dB/oct) → EQ×5 ─────────────────────┴→ master → out */
 function ensureCtx(){
+  if(RAW) return;
   if(ctx){ if(ctx.state==="suspended") ctx.resume(); return; }
-  ctx=new (window.AudioContext||window.webkitAudioContext)();
+  ctx=new (window.AudioContext||window.webkitAudioContext)({latencyHint:"playback"}); // 큰 버퍼로 끊김/잡음 방지
   src=ctx.createMediaElementSource(au); norm=ctx.createGain();
   const bq=(type,f,q,g)=>{const n=ctx.createBiquadFilter();n.type=type;n.frequency.value=f;if(q!=null)n.Q.value=q;if(g!=null)n.gain.value=g;return n};
   const Q=Math.SQRT1_2;
@@ -146,10 +148,13 @@ function ensureCtx(){
   limiter=ctx.createDynamicsCompressor(); limiter.knee.value=6;
   eq=[400,1000,2500,6300,16000].map(f=>bq("peaking",f,1.0,0));
   master=ctx.createGain();
+  lmk=ctx.createGain(); // 압축기 자동 증폭(makeup gain) 상쇄
+  safe=ctx.createWaveShaper(); // 출력 클리핑 방지용 소프트 클리퍼
+  { const c=new Float32Array(4097); for(let i=0;i<4097;i++){const x=i/2048-1,a=Math.abs(x);c[i]=a<=.85?x:Math.sign(x)*(.85+.15*Math.tanh((a-.85)/.15))} safe.curve=c; }
   src.connect(norm);
-  norm.connect(lp[0]); lp[0].connect(lp[1]); lp[1].connect(shelf); shelf.connect(punch); punch.connect(limiter); limiter.connect(master);
+  norm.connect(lp[0]); lp[0].connect(lp[1]); lp[1].connect(shelf); shelf.connect(punch); punch.connect(limiter); limiter.connect(lmk); lmk.connect(master);
   norm.connect(hp[0]); hp[0].connect(hp[1]); let p=hp[1]; eq.forEach(e=>{p.connect(e);p=e}); p.connect(master);
-  master.connect(ctx.destination);
+  master.connect(safe); safe.connect(ctx.destination);
   eqR.forEach((r,i)=>eq[i].gain.value=+r.value);
   applyDSP(true);
 }
@@ -159,12 +164,13 @@ function applyDSP(snap){
   $("#volT").textContent=$("#vol").value+"%";
   $("#nT").textContent=on?(normDb>=0?"+":"")+normDb.toFixed(1)+" dB":"OFF";
   document.querySelectorAll("#mode button").forEach((b,i)=>b.classList.toggle("on",i===mode));
-  if(!ctx) return;
+  if(!ctx){au.volume=$("#vol").value/100;return}
   const t=ctx.currentTime, tc=snap?.001:.04, set=(p,val,c)=>p.setTargetAtTime(val,t,c||tc);
   set(shelf.frequency,m.shF); set(shelf.gain,x*m.shG/10);
   set(punch.frequency,m.pF); set(punch.Q,m.pQ); set(punch.gain,x>0?x/10*m.pG:0);
   set(limiter.threshold,m.thr); set(limiter.ratio,m.ratio); set(limiter.attack,m.att); set(limiter.release,m.rel);
-  const compDb=-m.comp*Math.max(x,0);
+  set(lmk.gain,Math.pow(10,m.thr*(1-1/m.ratio)*.6/20));
+  const eqMax=Math.max(0,...eqR.map(r=>+r.value)), compDb=-m.comp*Math.max(x,0)-eqMax*.5;
   set(master.gain,$("#vol").value/100*Math.pow(10,compDb/20),.02);
   set(norm.gain,Math.pow(10,(on?normDb:0)/20),.05);
 }
@@ -172,12 +178,13 @@ function applyDSP(snap){
 /* 자동 노멀라이징: RMS -14dBFS 목표, 피크 0dBFS 초과 금지 */
 async function analyze(tr){
   if(tr.gain!=null) return tr.gain;
+  if(!ctx) return 0;
   try{
     const ab=await ctx.decodeAudioData(await tr.file.arrayBuffer());
     let sum=0,n=0,pk=0;
     for(let c=0;c<ab.numberOfChannels;c++){const d=ab.getChannelData(c);for(let i=0;i<d.length;i++){const v=d[i],a=v<0?-v:v;sum+=v*v;if(a>pk)pk=a}n+=d.length}
     const rmsDb=20*Math.log10(Math.sqrt(sum/n)||1e-6), pkDb=20*Math.log10(pk||1e-6);
-    tr.gain=Math.max(Math.min(-14-rmsDb,-pkDb-.3,12),-18);
+    tr.gain=Math.max(Math.min(-14-rmsDb,-pkDb-3,12),-18);
   }catch(e){tr.gain=0}
   return tr.gain;
 }
@@ -204,7 +211,7 @@ async function load(i,play){
   url=URL.createObjectURL(tr.file); au.src=url;
   $("#tName").textContent=tr.name; $("#tSub").textContent=(i+1)+" / "+tracks.length;
   render(); media(tr); normDb=0; applyDSP();
-  const g=await analyze(tr); if(my!==token) return;
+  const g=$("#autoOn").checked?await analyze(tr):0; if(my!==token) return;
   normDb=g; applyDSP();
   if(play) au.play().catch(()=>{});
 }
@@ -244,6 +251,10 @@ $("#bRep").onclick=e=>{repeat=!repeat;e.currentTarget.classList.toggle("on",repe
 $("#bList").onclick=()=>$("#pl").classList.toggle("open");$("#bClose").onclick=()=>$("#pl").classList.remove("open");
 $("#bClr").onclick=clearList;
 ["cbOn","vol","autoOn"].forEach(id=>$("#"+id).addEventListener("input",()=>applyDSP()));
+$("#autoOn").addEventListener("change",async()=>{
+  if(!$("#autoOn").checked||cur<0||!ctx) return;
+  const my=token, g=await analyze(tracks[cur]); if(my===token){normDb=g;applyDSP()}
+});
 $("#cb").addEventListener("input",()=>{applyDSP();markPreset(-1)});
 au.onplay=()=>$("#play").textContent="⏸";au.onpause=()=>$("#play").textContent="▶";
 au.onended=()=>next(true);
@@ -268,6 +279,7 @@ const eqR=[];
 function setEq(i,v){
   eqR[i].value=v;eqR[i].previousElementSibling.textContent=(v>0?"+":"")+v;
   if(ctx)eq[i].gain.setTargetAtTime(v,ctx.currentTime,.02);
+  applyDSP();
 }
 $("#flat").onclick=()=>{eqR.forEach((_,i)=>setEq(i,0));markPreset(-1)};
 
