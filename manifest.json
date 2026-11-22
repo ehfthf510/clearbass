@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Clear Bass Player",
+  "short_name": "ClearBass",
+  "description": "Clear Bass DSP, 자동 노멀라이징, 다이내믹 컬러 비주얼라이저를 갖춘 고음질 웹 오디오 플레이어",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050b14",
+  "theme_color": "#00d2ff",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

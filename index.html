@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Clear Bass Player</title>
+<meta name="theme-color" content="#050b14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--c:#0a3cd6;--c2:#2f6bff;--glow:rgba(16,78,255,.9);--soft:rgba(10,60,214,.26);--ln:rgba(30,90,255,.55);--bg:#050b14;--bg2:#0a192f;--tx:#e6efff;--mut:#7f95b8}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:clamp(13px,3.9vw,16px)}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--tx);font-family:Pretendard,"Noto Sans KR","Apple SD Gothic Neo",system-ui,sans-serif;line-height:1.4;overscroll-behavior:none}
+body{min-height:100dvh;background:radial-gradient(130% 50% at 50% 0,var(--bg2),var(--bg) 75%) no-repeat;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#app{max-width:520px;min-height:100dvh;margin:0 auto;padding:.7rem clamp(10px,4vw,18px) 1.4rem;display:flex;flex-direction:column;gap:clamp(8px,1.6dvh,14px)}
+button{font:inherit;font-size:.9rem;color:var(--tx);background:var(--soft);border:1px solid var(--ln);border-radius:.8rem;padding:.55rem .7rem;cursor:pointer;touch-action:manipulation;min-height:2.6rem}
+button:active{background:rgba(10,60,214,.55)}
+button.on{background:var(--c);border-color:var(--c2);color:#fff;box-shadow:0 0 14px var(--glow),inset 0 0 8px rgba(255,255,255,.18)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--c2);outline-offset:2px}
+input[type=range]{width:100%;accent-color:var(--c);touch-action:none;margin:0;height:1.8rem;filter:drop-shadow(0 0 5px var(--glow))}
+header{display:flex;gap:.5rem;align-items:center}
+header h1{font-size:1.05rem;margin:0 auto 0 0;font-weight:700;white-space:nowrap}
+header button{padding:.5rem .6rem;font-size:.82rem}
+#now{border:1px solid var(--ln);border-radius:1.1rem;padding:clamp(12px,2.6dvh,22px) 1rem;text-align:center;background:linear-gradient(180deg,rgba(10,60,214,.34),rgba(10,25,47,.5));box-shadow:0 0 24px rgba(16,78,255,.42),inset 0 0 20px rgba(10,60,214,.2)}
+#tName{display:block;font-size:clamp(1rem,5vw,1.3rem);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 0 12px var(--glow)}
+#tSub{color:var(--mut);font-size:.8rem}
+.row{display:flex;align-items:center;gap:.6rem}
+.tm{font-variant-numeric:tabular-nums;color:var(--mut);font-size:.78rem;min-width:2.5rem}
+#ctl{justify-content:center;gap:clamp(8px,3vw,14px)}
+#ctl button{width:clamp(44px,13vw,56px);height:clamp(44px,13vw,56px);padding:0;border-radius:50%;font-size:1.2rem;min-height:0}
+#ctl #play{width:clamp(56px,18vw,72px);height:clamp(56px,18vw,72px);font-size:1.6rem;background:var(--c);border-color:var(--c2);color:#fff;box-shadow:0 0 20px var(--glow)}
+.card{border:1px solid var(--ln);border-radius:1rem;padding:.7rem .85rem;background:rgba(10,25,47,.6);display:flex;flex-direction:column;gap:.5rem}
+.card h2{font-size:.9rem;margin:0;font-weight:600;flex:1}
+.sw{position:relative;width:2.9rem;height:1.6rem;flex:none}
+.sw input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2;filter:none}
+.sw i{position:absolute;inset:0;border-radius:1rem;background:#12203a;border:1px solid var(--ln);transition:.2s}
+.sw i:after{content:"";position:absolute;top:.17rem;left:.17rem;width:1.2rem;height:1.2rem;border-radius:50%;background:var(--mut);transition:.2s}
+.sw input:checked+i{background:rgba(10,60,214,.75);border-color:var(--c2);box-shadow:0 0 12px var(--glow)}
+.sw input:checked+i:after{left:1.45rem;background:#fff}
+.val{font-variant-numeric:tabular-nums;color:var(--c2);font-size:.85rem;text-align:right;text-shadow:0 0 8px var(--glow)}
+.grid{display:grid;gap:.4rem;grid-template-columns:repeat(auto-fit,minmax(5.2rem,1fr))}
+.grid button{padding:.45rem .3rem;font-size:.8rem}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
+#eq{display:flex;justify-content:space-between;gap:.25rem}
+#eq label{flex:1;display:flex;flex-direction:column;align-items:center;gap:.2rem;font-size:.72rem;color:var(--mut)}
+#eq input{writing-mode:vertical-lr;direction:rtl;height:clamp(84px,15dvh,130px);width:1.9rem}
+#eq output{color:var(--tx);font-variant-numeric:tabular-nums}
+#pl{position:fixed;left:0;right:0;bottom:0;height:62dvh;max-width:520px;margin:0 auto;background:#07121f;border:1px solid var(--ln);border-radius:1.2rem 1.2rem 0 0;transform:translateY(105%);transition:transform .28s ease;z-index:20;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -6px 30px rgba(16,78,255,.42)}
+#pl.open{transform:none}
+#plh{display:flex;align-items:center;gap:.5rem;padding:.7rem .85rem;border-bottom:1px solid var(--ln)}
+#plh span{flex:1;font-weight:600}
+#list{list-style:none;margin:0;padding:.4rem;overflow-y:auto;flex:1}
+#list li{padding:.7rem .75rem;border-radius:.6rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut)}
+#list li.cur{background:var(--soft);color:#fff;border-left:3px solid var(--c2);box-shadow:0 0 14px rgba(16,78,255,.5)}
+#list:empty:before{content:"재생목록이 비었습니다. 파일이나 폴더를 추가하거나 끌어다 놓으세요.";display:block;padding:1.5rem .75rem;color:var(--mut)}
+#drop{position:fixed;inset:0;background:rgba(5,11,20,.9);display:none;align-items:center;justify-content:center;font-size:1.3rem;z-index:30;border:3px dashed var(--c2);pointer-events:none}
+#drop.show{display:flex}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Clear Bass Player</h1>
+    <button id="bFile">📄 파일 선택</button>
+    <button id="bDir">📁 폴더 선택</button>
+    <button id="bList" aria-label="재생목록">☰</button>
+  </header>
+
+  <section id="now"><b id="tName">재생할 음원을 추가하세요</b><small id="tSub">Clear Bass Player</small></section>
+
+  <div class="row"><span class="tm" id="tCur">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" aria-label="재생 위치"><span class="tm" id="tDur">0:00</span></div>
+
+  <div class="row" id="ctl">
+    <button id="bShuf" aria-label="셔플">🔀</button>
+    <button id="bPrev" aria-label="이전 곡">⏮</button>
+    <button id="play" aria-label="재생/일시정지">▶</button>
+    <button id="bNext" aria-label="다음 곡">⏭</button>
+    <button id="bRep" aria-label="전체 반복">🔁</button>
+  </div>
+
+  <div class="row"><span>🔈</span><input type="range" id="vol" min="0" max="100" value="80" aria-label="마스터 볼륨"><span class="val" id="volT" style="min-width:2.8rem">80%</span></div>
+
+  <div class="grid" id="pre" aria-label="EQ 프리셋"></div>
+
+  <section class="card">
+    <div class="row"><h2>Clear Bass</h2><span class="val" id="cbT">0</span><label class="sw"><input type="checkbox" id="cbOn" checked aria-label="Clear Bass ON/OFF"><i></i></label></div>
+    <input type="range" id="cb" min="-10" max="10" step="1" value="0" aria-label="Clear Bass">
+    <div class="seg" id="mode" aria-label="베이스 성향"></div>
+  </section>
+
+  <section class="card">
+    <div class="row"><h2>Auto Normalize</h2><span class="val" id="nT">0.0 dB</span><label class="sw"><input type="checkbox" id="autoOn" checked aria-label="Auto Normalize"><i></i></label></div>
+  </section>
+
+  <section class="card">
+    <div class="row"><h2>5밴드 EQ</h2><button id="flat">Flat</button></div>
+    <div id="eq"></div>
+  </section>
+</div>
+
+<aside id="pl" aria-label="재생목록">
+  <div id="plh"><span id="plN">재생목록 (0)</span><button id="bClr">목록 비우기</button><button id="bClose">닫기</button></div>
+  <ul id="list"></ul>
+</aside>
+<div id="drop">여기에 파일이나 폴더를 놓으세요</div>
+
+<input type="file" id="fFile" multiple accept="audio/*" hidden>
+<input type="file" id="fDir" webkitdirectory directory multiple hidden>
+<audio id="au" preload="auto" playsinline></audio>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), au=$("#au");
+const AUDIO_RE=/\.(mp3|wav|flac|m4a|ogg|oga|opus|aac|wma)$/i;
+
+/* 베이스 성향: 쉘프(주파수, 최대dB) / 펀치(주파수, Q, 최대dB) / 리미터 / 자동 게인 보정(dB per step) */
+const MODES=[
+ {k:"균형",  shF:85,shG:12,pF:55,pQ:1.2,pG:4,thr:-8, ratio:16,att:.002,rel:.12,comp:.2},
+ {k:"깔끔",  shF:70,shG:9, pF:50,pQ:1.0,pG:2,thr:-11,ratio:20,att:.002,rel:.16,comp:.2},
+ {k:"타격감",shF:90,shG:12,pF:65,pQ:1.4,pG:6,thr:-6, ratio:12,att:.008,rel:.09,comp:.3}];
+const PRESETS=[
+ ["Flat",0,[0,0,0,0,0]],
+ ["Bass Boost",8,[2,0,0,2,3]],
+ ["Vocal Clear",-1,[2,5,4,2,1]],
+ ["Club / EDM",9,[3,-2,1,4,5]],
+ ["Acoustic / Cafe",2,[1,3,2,1,0]]];
+
+let tracks=[],cur=-1,shuffle=false,repeat=false,normDb=0,mode=0,url=null,token=0;
+let ctx,src,norm,lp,hp,shelf,punch,limiter,eq=[],master;
+
+/* audio → norm → ┬ LP×2(150Hz,24dB/oct) → shelf → punch → limiter ┐
+                  └ HP×2(150Hz,24dB/oct) → EQ×5 ─────────────────────┴→ master → out */
+function ensureCtx(){
+  if(ctx){ if(ctx.state==="suspended") ctx.resume(); return; }
+  ctx=new (window.AudioContext||window.webkitAudioContext)();
+  src=ctx.createMediaElementSource(au); norm=ctx.createGain();
+  const bq=(type,f,q,g)=>{const n=ctx.createBiquadFilter();n.type=type;n.frequency.value=f;if(q!=null)n.Q.value=q;if(g!=null)n.gain.value=g;return n};
+  const Q=Math.SQRT1_2;
+  lp=[bq("lowpass",150,Q),bq("lowpass",150,Q)]; hp=[bq("highpass",150,Q),bq("highpass",150,Q)];
+  shelf=bq("lowshelf",85,null,0); punch=bq("peaking",55,1.2,0);
+  limiter=ctx.createDynamicsCompressor(); limiter.knee.value=6;
+  eq=[400,1000,2500,6300,16000].map(f=>bq("peaking",f,1.0,0));
+  master=ctx.createGain();
+  src.connect(norm);
+  norm.connect(lp[0]); lp[0].connect(lp[1]); lp[1].connect(shelf); shelf.connect(punch); punch.connect(limiter); limiter.connect(master);
+  norm.connect(hp[0]); hp[0].connect(hp[1]); let p=hp[1]; eq.forEach(e=>{p.connect(e);p=e}); p.connect(master);
+  master.connect(ctx.destination);
+  eqR.forEach((r,i)=>eq[i].gain.value=+r.value);
+  applyDSP(true);
+}
+function applyDSP(snap){
+  const m=MODES[mode], v=+$("#cb").value, x=$("#cbOn").checked?v:0, on=$("#autoOn").checked;
+  $("#cbT").textContent=(v>0?"+":"")+v;
+  $("#volT").textContent=$("#vol").value+"%";
+  $("#nT").textContent=on?(normDb>=0?"+":"")+normDb.toFixed(1)+" dB":"OFF";
+  document.querySelectorAll("#mode button").forEach((b,i)=>b.classList.toggle("on",i===mode));
+  if(!ctx) return;
+  const t=ctx.currentTime, tc=snap?.001:.04, set=(p,val,c)=>p.setTargetAtTime(val,t,c||tc);
+  set(shelf.frequency,m.shF); set(shelf.gain,x*m.shG/10);
+  set(punch.frequency,m.pF); set(punch.Q,m.pQ); set(punch.gain,x>0?x/10*m.pG:0);
+  set(limiter.threshold,m.thr); set(limiter.ratio,m.ratio); set(limiter.attack,m.att); set(limiter.release,m.rel);
+  const compDb=-m.comp*Math.max(x,0);
+  set(master.gain,$("#vol").value/100*Math.pow(10,compDb/20),.02);
+  set(norm.gain,Math.pow(10,(on?normDb:0)/20),.05);
+}
+
+/* 자동 노멀라이징: RMS -14dBFS 목표, 피크 0dBFS 초과 금지 */
+async function analyze(tr){
+  if(tr.gain!=null) return tr.gain;
+  try{
+    const ab=await ctx.decodeAudioData(await tr.file.arrayBuffer());
+    let sum=0,n=0,pk=0;
+    for(let c=0;c<ab.numberOfChannels;c++){const d=ab.getChannelData(c);for(let i=0;i<d.length;i++){const v=d[i],a=v<0?-v:v;sum+=v*v;if(a>pk)pk=a}n+=d.length}
+    const rmsDb=20*Math.log10(Math.sqrt(sum/n)||1e-6), pkDb=20*Math.log10(pk||1e-6);
+    tr.gain=Math.max(Math.min(-14-rmsDb,-pkDb-.3,12),-18);
+  }catch(e){tr.gain=0}
+  return tr.gain;
+}
+
+/* 플레이리스트 */
+function isAudio(f){return (f.type&&f.type.startsWith("audio/"))||AUDIO_RE.test(f.name)}
+function addFiles(files){
+  const add=[...files].filter(isAudio).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:"base"}));
+  if(!add.length) return;
+  const first=tracks.length;
+  add.forEach(f=>tracks.push({file:f,name:f.name.replace(/\.[^.]+$/,""),gain:null}));
+  render(); if(cur<0) load(first,true);
+}
+function render(){
+  const ul=$("#list"); ul.textContent="";
+  tracks.forEach((t,i)=>{const li=document.createElement("li");li.textContent=(i+1)+". "+t.name;if(i===cur)li.className="cur";li.onclick=()=>load(i,true);ul.appendChild(li)});
+  $("#plN").textContent="재생목록 ("+tracks.length+")";
+  const c=ul.querySelector(".cur"); if(c) c.scrollIntoView({block:"nearest"});
+}
+async function load(i,play){
+  if(i<0||i>=tracks.length) return;
+  ensureCtx(); cur=i; const my=++token, tr=tracks[i];
+  if(url) URL.revokeObjectURL(url);
+  url=URL.createObjectURL(tr.file); au.src=url;
+  $("#tName").textContent=tr.name; $("#tSub").textContent=(i+1)+" / "+tracks.length;
+  render(); media(tr); normDb=0; applyDSP();
+  const g=await analyze(tr); if(my!==token) return;
+  normDb=g; applyDSP();
+  if(play) au.play().catch(()=>{});
+}
+function next(auto){
+  if(!tracks.length) return;
+  let n;
+  if(shuffle&&tracks.length>1){do n=Math.floor(Math.random()*tracks.length);while(n===cur)}
+  else{n=cur+1;if(n>=tracks.length){if(repeat||!auto)n=0;else{au.pause();au.currentTime=0;return}}}
+  load(n,true);
+}
+function prev(){if(au.currentTime>3){au.currentTime=0;return} load(cur<=0?tracks.length-1:cur-1,true)}
+function clearList(){
+  token++;au.pause();au.removeAttribute("src");au.load();if(url){URL.revokeObjectURL(url);url=null}
+  tracks=[];cur=-1;normDb=0;render();applyDSP();
+  $("#tName").textContent="재생할 음원을 추가하세요";$("#tSub").textContent="Clear Bass Player";
+}
+
+/* Media Session */
+function media(tr){
+  if(!("mediaSession" in navigator)) return;
+  navigator.mediaSession.metadata=new MediaMetadata({title:tr.name,artist:"Clear Bass Player",album:"Local Files",artwork:[{src:"icon-512.png",sizes:"512x512",type:"image/png"}]});
+}
+if("mediaSession" in navigator){
+  const h=(a,f)=>{try{navigator.mediaSession.setActionHandler(a,f)}catch(e){}};
+  h("play",()=>au.play());h("pause",()=>au.pause());h("previoustrack",prev);h("nexttrack",()=>next(false));
+}
+
+/* UI */
+const fmt=s=>isFinite(s)?Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0"):"0:00";
+$("#bFile").onclick=()=>$("#fFile").click();$("#bDir").onclick=()=>$("#fDir").click();
+$("#fFile").onchange=e=>{addFiles(e.target.files);e.target.value=""};
+$("#fDir").onchange=e=>{addFiles(e.target.files);e.target.value=""};
+$("#play").onclick=()=>{ensureCtx();if(cur<0){tracks.length?load(0,true):$("#bFile").click();return}au.paused?au.play():au.pause()};
+$("#bPrev").onclick=prev;$("#bNext").onclick=()=>next(false);
+$("#bShuf").onclick=e=>{shuffle=!shuffle;e.currentTarget.classList.toggle("on",shuffle)};
+$("#bRep").onclick=e=>{repeat=!repeat;e.currentTarget.classList.toggle("on",repeat)};
+$("#bList").onclick=()=>$("#pl").classList.toggle("open");$("#bClose").onclick=()=>$("#pl").classList.remove("open");
+$("#bClr").onclick=clearList;
+["cbOn","vol","autoOn"].forEach(id=>$("#"+id).addEventListener("input",()=>applyDSP()));
+$("#cb").addEventListener("input",()=>{applyDSP();markPreset(-1)});
+au.onplay=()=>$("#play").textContent="⏸";au.onpause=()=>$("#play").textContent="▶";
+au.onended=()=>next(true);
+let seeking=false;const sk=$("#seek");
+au.ontimeupdate=()=>{if(!seeking)sk.value=au.duration?au.currentTime/au.duration*1000:0;$("#tCur").textContent=fmt(au.currentTime)};
+au.onloadedmetadata=()=>$("#tDur").textContent=fmt(au.duration);
+sk.addEventListener("input",()=>{seeking=true;$("#tCur").textContent=fmt(sk.value/1000*au.duration)});
+sk.addEventListener("change",()=>{if(au.duration)au.currentTime=sk.value/1000*au.duration;seeking=false});
+
+// 베이스 성향 스위치
+MODES.forEach((m,i)=>{const b=document.createElement("button");b.textContent=m.k;b.onclick=()=>{mode=i;applyDSP()};$("#mode").appendChild(b)});
+
+// EQ
+const eqR=[];
+["400","1k","2.5k","6.3k","16k"].forEach((l,i)=>{
+  const lb=document.createElement("label");
+  lb.innerHTML='<output>0</output><input type="range" min="-10" max="10" step="0.5" value="0" aria-label="'+l+'Hz"><span>'+l+'</span>';
+  const r=lb.querySelector("input");eqR.push(r);
+  r.oninput=()=>{setEq(i,+r.value);markPreset(-1)};
+  $("#eq").appendChild(lb);
+});
+function setEq(i,v){
+  eqR[i].value=v;eqR[i].previousElementSibling.textContent=(v>0?"+":"")+v;
+  if(ctx)eq[i].gain.setTargetAtTime(v,ctx.currentTime,.02);
+}
+$("#flat").onclick=()=>{eqR.forEach((_,i)=>setEq(i,0));markPreset(-1)};
+
+// EQ 프리셋: 슬라이더 값과 실제 필터를 즉시 변경
+function markPreset(a){document.querySelectorAll("#pre button").forEach((b,i)=>b.classList.toggle("on",i===a))}
+PRESETS.forEach(([n,cb,e],i)=>{
+  const b=document.createElement("button");b.textContent=n;
+  b.onclick=()=>{$("#cb").value=cb;e.forEach((v,j)=>setEq(j,v));applyDSP();markPreset(i)};
+  $("#pre").appendChild(b);
+});
+markPreset(0);
+
+// 드래그 앤 드롭
+async function walk(en,out){
+  if(en.isFile){out.push(await new Promise(r=>en.file(r,()=>r(null))))}
+  else if(en.isDirectory){const rd=en.createReader();let b;do{b=await new Promise(r=>rd.readEntries(r,()=>r([])));for(const x of b)await walk(x,out)}while(b.length)}
+}
+let dc=0;const dz=$("#drop");
+addEventListener("dragenter",e=>{e.preventDefault();dc++;dz.classList.add("show")});
+addEventListener("dragleave",e=>{e.preventDefault();if(--dc<=0){dc=0;dz.classList.remove("show")}});
+addEventListener("dragover",e=>e.preventDefault());
+addEventListener("drop",async e=>{
+  e.preventDefault();dc=0;dz.classList.remove("show");
+  const items=[...(e.dataTransfer.items||[])].map(i=>i.webkitGetAsEntry&&i.webkitGetAsEntry()).filter(Boolean);
+  if(!items.length){addFiles(e.dataTransfer.files);return}
+  const out=[];for(const en of items)await walk(en,out);
+  addFiles(out.filter(Boolean));
+});
+
+applyDSP();
+if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+</script>
+</body>
+</html>
