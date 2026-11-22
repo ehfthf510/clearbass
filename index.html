@@ -254,7 +254,7 @@ $("#autoOn").addEventListener("change",async()=>{
   if(!$("#autoOn").checked||cur<0||!ctx) return;
   const my=token, g=await analyze(tracks[cur]); if(my===token){normDb=g;applyDSP()}
 });
-$("#cb").addEventListener("input",()=>{applyDSP();markPreset(-1)});
+$("#cb").addEventListener("input",()=>applyDSP());
 au.onplay=()=>$("#play").textContent="⏸";au.onpause=()=>$("#play").textContent="▶";
 au.onended=()=>next(true);
 let seeking=false;const sk=$("#seek");
@@ -286,7 +286,7 @@ $("#flat").onclick=()=>{eqR.forEach((_,i)=>setEq(i,0));markPreset(-1)};
 function markPreset(a){document.querySelectorAll("#pre button").forEach((b,i)=>b.classList.toggle("on",i===a))}
 PRESETS.forEach(([n,cb,e],i)=>{
   const b=document.createElement("button");b.textContent=n;
-  b.onclick=()=>{$("#cb").value=cb;e.forEach((v,j)=>setEq(j,v));applyDSP();markPreset(i)};
+  b.onclick=()=>{e.forEach((v,j)=>setEq(j,v));applyDSP();markPreset(i)};
   $("#pre").appendChild(b);
 });
 markPreset(0);
